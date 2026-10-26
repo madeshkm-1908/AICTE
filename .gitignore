@@ -13,9 +13,6 @@ server/data/*.db
 server/data/*.db-wal
 server/data/*.db-shm
 
-# Frontend production build output (Render builds this during deployment)
-client/dist/
-
 # Logs
 logs/
 *.log
