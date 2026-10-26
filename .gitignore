@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Environment configurations & local secrets
+.env
+*.env
+*.env.local
+.env.*.local
+
+# SQLite local databases & write-ahead logs
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+
+# Frontend production build output (Render builds this during deployment)
+client/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
