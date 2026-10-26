@@ -89,17 +89,39 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve frontend production build if present (SPA fallback middleware compatible with Express 5)
-const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
-app.use(express.static(clientDistPath));
-app.use((req, res, next) => {
-  if (req.method === 'GET' && !req.path.startsWith('/api')) {
-    const indexPath = path.join(clientDistPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      return res.sendFile(indexPath);
+const clientDistPath = path.resolve(__dirname, '..', 'client', 'dist');
+const indexHtmlPath = path.resolve(clientDistPath, 'index.html');
+
+console.log(`[Frontend] Target static assets directory: ${clientDistPath}`);
+console.log(`[Frontend] Assets directory exists: ${fs.existsSync(clientDistPath)}`);
+console.log(`[Frontend] index.html exists: ${fs.existsSync(indexHtmlPath)}`);
+
+if (fs.existsSync(clientDistPath)) {
+  console.log(`[Frontend] Serving static client build from: ${clientDistPath}`);
+  app.use(express.static(clientDistPath, { index: 'index.html' }));
+  
+  // SPA Catch-All fallback: Any non-/api GET route returns index.html for client-side routing
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      if (fs.existsSync(indexHtmlPath)) {
+        return res.sendFile(indexHtmlPath);
+      }
     }
-  }
-  next();
-});
+    next();
+  });
+} else {
+  console.warn(`[Frontend] WARNING: client/dist directory does NOT exist at: ${clientDistPath}`);
+  app.get('/', (req, res) => {
+    res.status(503).send(`
+      <div style="font-family:sans-serif;padding:40px;text-align:center;">
+        <h2>Frontend Build Not Found</h2>
+        <p>The frontend static build was not located in client/dist.</p>
+        <p>Build Command: <code>npm install --include=dev --prefix client && npm run build --prefix client</code></p>
+        <p>API Health: <a href="/api/health">/api/health</a></p>
+      </div>
+    `);
+  });
+}
 
 app.listen(PORT, () => {
   // Start automated alert surveillance scheduler (60-second cycle)
