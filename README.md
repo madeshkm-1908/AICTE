@@ -72,13 +72,27 @@ npm run seed
 
 The portal features quick-select role chips on the `/login` screen for 1-click evaluation:
 
-| Role | Username | Password | Bureau / Jurisdiction | Permitted Scope |
+| Role | Username / Identifier | Password | Bureau / Jurisdiction | Permitted Scope |
 |---|---|---|---|---|
 | **Senior Management** | `admin_mgmt` | `aicte@2026` | Council Secretariat | Full Council-wide view, all case actions, audit trail access, full reporting |
 | **Regulation Bureau** | `rb_director` | `aicte@2026` | Regulation Bureau | Views all cases; takes procedural actions on Regulation Bureau dockets |
 | **PGRC Bureau** | `pgrc_director` | `aicte@2026` | Public Grievance (PGRC) | Views all cases; takes procedural actions on PGRC dockets |
 | **Approval Bureau** | `approval_officer` | `aicte@2026` | Approval Bureau | Views all cases; takes procedural actions on Approval Bureau dockets |
 | **Regional Office** | `ro_officer` | `aicte@2026` | Southern Regional Office | Views and acts **only** on institutions and cases located in Southern Region |
+| **Complainant** | `student.rahul@example.com` *(or Register new)* | `aicte@2026` | Public Grievant (Student / Parent / Faculty) | **Citizen Portal only**: Lodges grievances, tracks public milestones; **HTTP 403 on all official internal APIs** |
+
+---
+
+## 👥 Citizen Grievance Portal (Complainant Experience)
+
+A completely segregated, citizen-friendly portal designed for students, parents, faculty, and other stakeholders:
+1. **Public Registration (`/complainant/register`)**: Register with legal name, email, 10-digit mobile, password (hashed with `bcryptjs`), and stakeholder type (`Student`, `Faculty`, `Parent`, `Other`).
+2. **Citizen Login (`/complainant/login`)**: Separate citizen authentication with strict mutual lockout (officials cannot sign in through citizen login and vice versa).
+3. **Raise Formal Complaint**: Search 10,000+ AICTE-approved institutions by name or Permanent ID, select category, specify incident date, provide detailed facts, and attach documentation.
+4. **Instant Case ID**: Generates an official `AICTE-PGRC-2026-XXXX` reference identifier upon submission with 1-click clipboard copy.
+5. **Real-time Cross-Bureau Integration**: New complaints automatically populate the database, trigger background overlap surveillance and alert generation, and broadcast live SSE events to official dashboards.
+6. **Public-Safe Tracking Timeline**: Transparent status milestones (`Received` &rarr; `Under Review` &rarr; `Action Taken` &rarr; `Closed`) while keeping sensitive internal officer assignments and internal memos confidential.
+7. **Strict Backend Security Isolation**: Enforced HTTP 403 on all official internal routes (`/dashboard`, `/cases`, `/overlaps`, `/reports`, `/audit`, `/import`, `/alerts`, `/search`, `/institutions`). Complainants can only query their own grievances.
 
 ---
 

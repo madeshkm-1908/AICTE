@@ -4,6 +4,14 @@ const db = require('../db/database');
 const { optionalAuth, getUserRegion } = require('./auth');
 const { normalizeInstitutionName, levenshteinDistance } = require('../services/overlapDetector');
 
+// Block Complainants from accessing official global search
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from searching official internal dockets.' });
+  }
+  next();
+});
+
 // GET /api/search?q=... - Quick global instant suggestions
 router.get('/', optionalAuth, async (req, res) => {
   try {

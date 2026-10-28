@@ -41,6 +41,14 @@ async function checkCaseActionPermission(user, currentCase) {
   return { allowed: true };
 }
 
+// Block Complainants from accessing official case APIs
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing official case registries.' });
+  }
+  next();
+});
+
 // GET /api/cases - List with server-side pagination, search & multi-dimensional filters
 router.get('/', optionalAuth, async (req, res) => {
   try {

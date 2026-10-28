@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { 
   Lock, 
@@ -10,17 +10,28 @@ import {
   ArrowRight, 
   AlertCircle,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  GraduationCap
 } from 'lucide-react';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('admin_mgmt');
   const [password, setPassword] = useState('aicte@2026');
   const [demoUsers, setDemoUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'Complainant') {
+        navigate('/complainant');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     async function loadDemo() {
@@ -122,6 +133,21 @@ export default function Login() {
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md bg-white border border-card-border rounded-2xl p-8 shadow-card">
           
+          {/* Link to Citizen / Complainant Portal */}
+          <div className="mb-6 p-3 bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200/80 rounded-xl flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <GraduationCap className="w-4 h-4 text-aicte-navy shrink-0" />
+              <span className="text-2xs font-semibold text-aicte-navy">Student, Parent or Faculty?</span>
+            </div>
+            <Link
+              to="/complainant/login"
+              className="inline-flex items-center space-x-1 text-xs font-bold text-aicte-navy-light hover:text-aicte-navy underline transition-smooth"
+            >
+              <span>Citizen Portal</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
           <div className="mb-6">
             <span className="text-3xs font-bold text-muted uppercase tracking-wider block">
               Authorized Official Access

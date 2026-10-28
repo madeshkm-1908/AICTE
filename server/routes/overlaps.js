@@ -3,6 +3,15 @@ const router = express.Router();
 const db = require('../db/database');
 const { broadcastEvent } = require('../events');
 const { detectOverlaps, syncOverlapAlerts } = require('../services/overlapDetector');
+const { optionalAuth } = require('./auth');
+
+// Block Complainants from accessing official overlap APIs
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing overlap analysis.' });
+  }
+  next();
+});
 
 // GET /api/overlaps - Comprehensive list of institutions with active parallel cases across bureaus
 router.get('/', async (req, res) => {

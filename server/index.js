@@ -17,6 +17,7 @@ const reportsRouter = require('./routes/reports');
 const auditRouter = require('./routes/audit');
 const searchRouter = require('./routes/search');
 const importRouter = require('./routes/import');
+const complainantRouter = require('./routes/complainant');
 const { startAlertScheduler } = require('./services/alertGenerator');
 
 const app = express();
@@ -48,6 +49,8 @@ const loginRateLimiter = rateLimit({
   legacyHeaders: false
 });
 app.use('/api/auth/login', loginRateLimiter);
+app.use('/api/auth/complainant/login', loginRateLimiter);
+app.use('/api/auth/complainant/register', loginRateLimiter);
 
 // General API Rate Limiter (300 requests per minute per IP)
 const generalLimiter = rateLimit({
@@ -74,6 +77,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/import', importRouter);
+app.use('/api/complainant', complainantRouter);
 
 // Enhanced Health Check Endpoint
 app.get('/api/health', (req, res) => {

@@ -3,6 +3,14 @@ const router = express.Router();
 const db = require('../db/database');
 const { authenticateToken, optionalAuth, getUserRegion } = require('./auth');
 
+// Block Complainants from accessing official dashboard
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing official dashboard resources.' });
+  }
+  next();
+});
+
 // GET /api/dashboard/summary - All main dashboard metrics computed from database
 router.get('/summary', optionalAuth, async (req, res) => {
   try {

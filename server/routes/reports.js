@@ -4,6 +4,14 @@ const db = require('../db/database');
 const { optionalAuth, getUserRegion } = require('./auth');
 const { detectOverlaps } = require('../services/overlapDetector');
 
+// Block Complainants from accessing official reports
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing official reports.' });
+  }
+  next();
+});
+
 // Helper to construct date filters
 function buildDateFilter(from, to, field = 'c.received_date') {
   let sql = '';

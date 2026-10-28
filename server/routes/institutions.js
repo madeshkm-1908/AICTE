@@ -4,6 +4,14 @@ const db = require('../db/database');
 const { computeFuzzySimilarity, normalizeInstitutionName, levenshteinDistance } = require('../services/overlapDetector');
 const { optionalAuth, getUserRegion } = require('./auth');
 
+// Block Complainants from accessing official internal institutions directory
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing official institutional intelligence profiles.' });
+  }
+  next();
+});
+
 // GET /api/institutions - Directory of institutions with computed case metrics & fuzzy search
 router.get('/', optionalAuth, async (req, res) => {
   try {

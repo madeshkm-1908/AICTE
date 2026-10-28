@@ -119,6 +119,7 @@ if (isPostgres) {
           bureau TEXT NOT NULL,
           designation TEXT,
           email TEXT,
+          mobile VARCHAR(20),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -148,6 +149,11 @@ if (isPostgres) {
           expected_disposal_date DATE NOT NULL,
           priority VARCHAR(20) NOT NULL,
           complainant_type TEXT DEFAULT 'Public',
+          source VARCHAR(50) DEFAULT 'Official',
+          complainant_id INTEGER,
+          incident_date DATE,
+          attachment_name TEXT,
+          attachment_data TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -197,6 +203,14 @@ if (isPostgres) {
         CREATE INDEX IF NOT EXISTS idx_pg_cases_bureau ON cases(bureau);
         CREATE INDEX IF NOT EXISTS idx_pg_cases_received ON cases(received_date);
         CREATE INDEX IF NOT EXISTS idx_pg_actions_case ON case_actions(case_id);
+
+        -- Safe column migrations for existing Postgres tables
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile VARCHAR(20);
+        ALTER TABLE cases ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'Official';
+        ALTER TABLE cases ADD COLUMN IF NOT EXISTS complainant_id INTEGER;
+        ALTER TABLE cases ADD COLUMN IF NOT EXISTS incident_date DATE;
+        ALTER TABLE cases ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+        ALTER TABLE cases ADD COLUMN IF NOT EXISTS attachment_data TEXT;
       `);
       console.log('PostgreSQL schema initialized successfully.');
     } catch (err) {
@@ -229,6 +243,7 @@ if (isPostgres) {
       bureau TEXT NOT NULL,
       designation TEXT,
       email TEXT,
+      mobile TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -258,6 +273,11 @@ if (isPostgres) {
       expected_disposal_date DATE NOT NULL,
       priority TEXT NOT NULL CHECK(priority IN ('High', 'Medium', 'Low', 'Urgent')),
       complainant_type TEXT DEFAULT 'Public',
+      source TEXT DEFAULT 'Official',
+      complainant_id INTEGER,
+      incident_date DATE,
+      attachment_name TEXT,
+      attachment_data TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (aicte_permanent_id) REFERENCES institutions (aicte_permanent_id)
     );
@@ -314,6 +334,14 @@ if (isPostgres) {
     CREATE INDEX IF NOT EXISTS idx_actions_case ON case_actions(case_id);
     CREATE INDEX IF NOT EXISTS idx_overlap_key ON overlap_resolutions(institution_key);
   `);
+
+  // Safe migrations for SQLite
+  try { sqliteDb.exec("ALTER TABLE users ADD COLUMN mobile TEXT"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE cases ADD COLUMN source TEXT DEFAULT 'Official'"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE cases ADD COLUMN complainant_id INTEGER"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE cases ADD COLUMN incident_date DATE"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE cases ADD COLUMN attachment_name TEXT"); } catch (e) {}
+  try { sqliteDb.exec("ALTER TABLE cases ADD COLUMN attachment_data TEXT"); } catch (e) {}
 
   dbInstance = {
     isPostgres: false,

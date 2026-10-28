@@ -13,7 +13,35 @@ import Reports from './pages/Reports';
 import AuditLog from './pages/AuditLog';
 import ImportData from './pages/ImportData';
 import Login from './pages/Login';
+import ComplainantLogin from './pages/ComplainantLogin';
+import ComplainantRegister from './pages/ComplainantRegister';
+import ComplainantPortal from './pages/ComplainantPortal';
 import { subscribeToLiveUpdates, api } from './services/api';
+
+function ProtectedComplainantRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-page flex items-center justify-center font-mono text-xs text-muted">
+        <div className="flex items-center space-x-2">
+          <div className="w-2.5 h-2.5 bg-aicte-navy-light rounded-full animate-ping" />
+          <span>Verifying citizen session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/complainant/login" replace />;
+  }
+
+  if (user.role !== 'Complainant') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <ComplainantPortal />;
+}
 
 function ProtectedLayout() {
   const { user, loading } = useAuth();
@@ -67,6 +95,11 @@ function ProtectedLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect complainants to the dedicated Complainant Portal
+  if (user.role === 'Complainant') {
+    return <Navigate to="/complainant" replace />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-page text-body antialiased">
       {/* Top Header */}
@@ -114,6 +147,9 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/complainant/login" element={<ComplainantLogin />} />
+          <Route path="/complainant/register" element={<ComplainantRegister />} />
+          <Route path="/complainant/*" element={<ProtectedComplainantRoute />} />
           <Route path="/*" element={<ProtectedLayout />} />
         </Routes>
       </BrowserRouter>

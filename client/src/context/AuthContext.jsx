@@ -35,6 +35,24 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  const complainantLogin = async (identifier, password) => {
+    const data = await api.complainantLogin(identifier, password);
+    localStorage.setItem('aicte_token', data.token);
+    localStorage.setItem('aicte_user', JSON.stringify(data.user));
+    setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const complainantRegister = async (payload) => {
+    const data = await api.complainantRegister(payload);
+    localStorage.setItem('aicte_token', data.token);
+    localStorage.setItem('aicte_user', JSON.stringify(data.user));
+    setToken(data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem('aicte_token');
     localStorage.removeItem('aicte_user');
@@ -43,7 +61,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, complainantLogin, complainantRegister, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

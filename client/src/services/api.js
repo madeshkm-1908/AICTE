@@ -24,6 +24,69 @@ export const api = {
     return res.json();
   },
 
+  async complainantLogin(identifier, password) {
+    const res = await fetch(`${API_BASE}/auth/complainant/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: identifier, password })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Complainant login failed');
+    }
+    return res.json();
+  },
+
+  async complainantRegister(payload) {
+    const res = await fetch(`${API_BASE}/auth/complainant/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Registration failed');
+    }
+    return res.json();
+  },
+
+  async searchComplainantInstitutions(q = '') {
+    const res = await fetch(`${API_BASE}/complainant/institutions?q=${encodeURIComponent(q)}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to search institutions');
+    return res.json();
+  },
+
+  async submitComplainantGrievance(data) {
+    const res = await fetch(`${API_BASE}/complainant/complaints`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to submit grievance');
+    }
+    return res.json();
+  },
+
+  async getMyComplaints() {
+    const res = await fetch(`${API_BASE}/complainant/my-complaints`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to load complaints');
+    return res.json();
+  },
+
+  async getMyComplaintDetail(caseId) {
+    const res = await fetch(`${API_BASE}/complainant/my-complaints/${encodeURIComponent(caseId)}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to load complaint tracking detail');
+    return res.json();
+  },
+
   async getMe() {
     const res = await fetch(`${API_BASE}/auth/me`, {
       headers: getAuthHeaders()

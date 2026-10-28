@@ -3,6 +3,15 @@ const router = express.Router();
 const db = require('../db/database');
 const { broadcastEvent } = require('../events');
 const { generateAlerts } = require('../services/alertGenerator');
+const { optionalAuth } = require('./auth');
+
+// Block Complainants from accessing official alerts
+router.use(optionalAuth, (req, res, next) => {
+  if (req.user && req.user.role === 'Complainant') {
+    return res.status(403).json({ error: 'Access Denied: Complainant accounts are restricted from accessing system alerts.' });
+  }
+  next();
+});
 
 // Helper to determine regional office filter
 function getUserRegion(user) {
