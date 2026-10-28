@@ -112,11 +112,22 @@ export const api = {
 
   // Cases
   async getCases(params = {}) {
-    const query = new URLSearchParams(params).toString();
+    const cleanParams = {};
+    Object.keys(params).forEach(k => {
+      const v = params[k];
+      if (v !== undefined && v !== null && v !== 'undefined' && v !== 'null') {
+        if (typeof v === 'string' && v.trim() === '') return;
+        cleanParams[k] = v;
+      }
+    });
+    const query = new URLSearchParams(cleanParams).toString();
     const res = await fetch(`${API_BASE}/cases${query ? `?${query}` : ''}`, {
       headers: getAuthHeaders()
     });
-    if (!res.ok) throw new Error('Failed to load cases');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}: Failed to load cases`);
+    }
     return res.json();
   },
 

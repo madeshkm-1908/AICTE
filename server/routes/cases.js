@@ -53,7 +53,15 @@ router.use(optionalAuth, (req, res, next) => {
 function isAllFilter(val) {
   if (val === undefined || val === null) return true;
   const s = String(val).trim().toUpperCase();
-  return s === '' || s === 'ALL';
+  return s === '' || s === 'ALL' || s === 'UNDEFINED' || s === 'NULL';
+}
+
+// Helper to validate YYYY-MM-DD date strings
+function isValidDateString(val) {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (trimmed === '' || trimmed === 'undefined' || trimmed === 'null') return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) && !isNaN(Date.parse(trimmed));
 }
 
 // GET /api/cases - List with server-side pagination, search & multi-dimensional filters
@@ -108,21 +116,21 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     // SLA Overdue handling (supports 'true', true, '1', 1)
-    if (String(overdue).toLowerCase() === 'true' || overdue === '1' || overdue === 1) {
+    if (overdue && (String(overdue).toLowerCase() === 'true' || overdue === '1' || overdue === 1)) {
       whereClause += ` AND c.expected_disposal_date < date('now') AND c.status != 'Disposed'`;
     }
 
-    if (date_from && String(date_from).trim() !== '') {
+    if (isValidDateString(date_from)) {
       whereClause += ` AND c.received_date >= ?`;
       params.push(String(date_from).trim());
     }
 
-    if (date_to && String(date_to).trim() !== '') {
+    if (isValidDateString(date_to)) {
       whereClause += ` AND c.received_date <= ?`;
       params.push(String(date_to).trim());
     }
 
-    if (search && String(search).trim() !== '') {
+    if (search && String(search).trim() !== '' && String(search).trim() !== 'undefined') {
       whereClause += ` AND (c.case_id LIKE ? OR i.name LIKE ? OR c.aicte_permanent_id LIKE ? OR c.category LIKE ? OR c.assigned_officer LIKE ?)`;
       const s = `%${String(search).trim()}%`;
       params.push(s, s, s, s, s);

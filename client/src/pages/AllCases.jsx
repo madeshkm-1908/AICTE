@@ -137,19 +137,21 @@ export default function AllCases({ triggerRefresh }) {
     setLoading(true);
     setError('');
     try {
-      const res = await api.getCases({
+      const queryParams = {
         page: pagination.page,
-        limit: 20,
-        bureau,
-        status,
-        region,
-        category,
-        priority,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-        overdue: overdueOnly ? 'true' : undefined,
-        search
-      });
+        limit: 20
+      };
+      if (bureau && bureau.toUpperCase() !== 'ALL') queryParams.bureau = bureau;
+      if (status && status.toUpperCase() !== 'ALL') queryParams.status = status;
+      if (region && region.toUpperCase() !== 'ALL') queryParams.region = region;
+      if (category && category.toUpperCase() !== 'ALL') queryParams.category = category;
+      if (priority && priority.toUpperCase() !== 'ALL') queryParams.priority = priority;
+      if (dateFrom && dateFrom.trim()) queryParams.date_from = dateFrom.trim();
+      if (dateTo && dateTo.trim()) queryParams.date_to = dateTo.trim();
+      if (overdueOnly) queryParams.overdue = 'true';
+      if (search && search.trim()) queryParams.search = search.trim();
+
+      const res = await api.getCases(queryParams);
       setCases(res.cases || []);
       setPagination(res.pagination || { page: 1, total: 0, totalPages: 1 });
     } catch (err) {
