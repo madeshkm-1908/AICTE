@@ -49,6 +49,13 @@ router.use(optionalAuth, (req, res, next) => {
   next();
 });
 
+// Helper to check if a filter value is an "ALL" wildcard or empty
+function isAllFilter(val) {
+  if (val === undefined || val === null) return true;
+  const s = String(val).trim().toUpperCase();
+  return s === '' || s === 'ALL';
+}
+
 // GET /api/cases - List with server-side pagination, search & multi-dimensional filters
 router.get('/', optionalAuth, async (req, res) => {
   try {
@@ -71,52 +78,53 @@ router.get('/', optionalAuth, async (req, res) => {
     let whereClause = 'WHERE 1=1';
     const params = [];
 
-    if (bureau && bureau !== 'ALL') {
+    if (!isAllFilter(bureau)) {
       whereClause += ' AND c.bureau = ?';
-      params.push(bureau);
+      params.push(String(bureau).trim());
     }
 
-    if (status && status !== 'ALL') {
+    if (!isAllFilter(status)) {
       whereClause += ' AND c.status = ?';
-      params.push(status);
+      params.push(String(status).trim());
     }
 
     const userRegion = getUserRegion(req.user);
     if (userRegion) {
       whereClause += ' AND i.region = ?';
       params.push(userRegion);
-    } else if (region && region !== 'ALL') {
+    } else if (!isAllFilter(region)) {
       whereClause += ' AND i.region = ?';
-      params.push(region);
+      params.push(String(region).trim());
     }
 
-    if (category && category !== 'ALL') {
+    if (!isAllFilter(category)) {
       whereClause += ' AND c.category = ?';
-      params.push(category);
+      params.push(String(category).trim());
     }
 
-    if (priority && priority !== 'ALL') {
+    if (!isAllFilter(priority)) {
       whereClause += ' AND c.priority = ?';
-      params.push(priority);
+      params.push(String(priority).trim());
     }
 
-    if (overdue === 'true') {
+    // SLA Overdue handling (supports 'true', true, '1', 1)
+    if (String(overdue).toLowerCase() === 'true' || overdue === '1' || overdue === 1) {
       whereClause += ` AND c.expected_disposal_date < date('now') AND c.status != 'Disposed'`;
     }
 
-    if (date_from) {
+    if (date_from && String(date_from).trim() !== '') {
       whereClause += ` AND c.received_date >= ?`;
-      params.push(date_from);
+      params.push(String(date_from).trim());
     }
 
-    if (date_to) {
+    if (date_to && String(date_to).trim() !== '') {
       whereClause += ` AND c.received_date <= ?`;
-      params.push(date_to);
+      params.push(String(date_to).trim());
     }
 
-    if (search && search.trim() !== '') {
+    if (search && String(search).trim() !== '') {
       whereClause += ` AND (c.case_id LIKE ? OR i.name LIKE ? OR c.aicte_permanent_id LIKE ? OR c.category LIKE ? OR c.assigned_officer LIKE ?)`;
-      const s = `%${search.trim()}%`;
+      const s = `%${String(search).trim()}%`;
       params.push(s, s, s, s, s);
     }
 
@@ -128,14 +136,17 @@ router.get('/', optionalAuth, async (req, res) => {
       ${whereClause}
     `;
     const countRow = await db.prepare(countSql).get(...params);
-    const totalRecords = countRow ? parseInt(countRow.total) : 0;
+    const rawTotal = countRow?.total ?? countRow?.count ?? 0;
+    const totalRecords = isNaN(parseInt(rawTotal, 10)) ? 0 : parseInt(rawTotal, 10);
 
     // Allowed sort columns
     const allowedSortCols = ['received_date', 'expected_disposal_date', 'priority', 'status', 'case_id', 'bureau'];
     const safeSortBy = allowedSortCols.includes(sortBy) ? `c.${sortBy}` : 'c.received_date';
-    const safeSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const safeSortOrder = String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const numLimit = Math.max(1, parseInt(limit, 10) || 20);
+    const numPage = Math.max(1, parseInt(page, 10) || 1);
+    const offset = (numPage - 1) * numLimit;
 
     const listSql = `
       SELECT 
@@ -167,20 +178,26 @@ router.get('/', optionalAuth, async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    const cases = await db.prepare(listSql).all(...params, parseInt(limit), offset);
+    const cases = await db.prepare(listSql).all(...params, numLimit, offset);
+
+    console.log(`[Cases API] Executed with ${params.length} params. Total matches: ${totalRecords}, Returned: ${cases.length}`);
 
     res.json({
       cases,
       pagination: {
         total: totalRecords,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(totalRecords / parseInt(limit))
+        page: numPage,
+        limit: numLimit,
+        totalPages: Math.max(1, Math.ceil(totalRecords / numLimit))
       }
     });
   } catch (err) {
-    console.error('Error fetching cases:', err);
-    res.status(500).json({ error: 'Failed to retrieve cases' });
+    console.error('[Cases API Error] Failed fetching cases:', err.message, err.stack);
+    res.status(500).json({ 
+      error: 'Failed to retrieve cases: ' + err.message,
+      cases: [],
+      pagination: { total: 0, page: 1, limit: 20, totalPages: 0 }
+    });
   }
 });
 

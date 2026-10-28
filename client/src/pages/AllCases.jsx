@@ -23,9 +23,6 @@ export default function AllCases({ triggerRefresh }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialSearch = searchParams.get('search') || '';
-  const initialStatus = searchParams.get('status') || 'ALL';
-  const initialOverdue = searchParams.get('overdue') === 'true';
 
   const [cases, setCases] = useState([]);
   const [institutionsList, setInstitutionsList] = useState([]);
@@ -33,17 +30,80 @@ export default function AllCases({ triggerRefresh }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Filters
-  const [search, setSearch] = useState(initialSearch);
+  // Filters (Default to 'ALL' on initial load; do not persist old sessions)
+  const [search, setSearch] = useState('');
   const [bureau, setBureau] = useState('ALL');
-  const [status, setStatus] = useState(initialStatus);
+  const [status, setStatus] = useState('ALL');
   const [region, setRegion] = useState('ALL');
   const [category, setCategory] = useState('ALL');
   const [priority, setPriority] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [overdueOnly, setOverdueOnly] = useState(initialOverdue);
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+
+  // Sync URL search params if explicitly provided on visit; reset if navigating to clean /cases
+  useEffect(() => {
+    const pSearch = searchParams.get('search');
+    const pStatus = searchParams.get('status');
+    const pOverdue = searchParams.get('overdue');
+
+    if (pSearch) {
+      setSearch(pSearch);
+    } else {
+      setSearch('');
+    }
+
+    if (pStatus && pStatus.toUpperCase() !== 'ALL') {
+      setStatus(pStatus);
+    } else {
+      setStatus('ALL');
+    }
+
+    if (pOverdue === 'true') {
+      setOverdueOnly(true);
+    } else {
+      setOverdueOnly(false);
+    }
+
+    // If query string is completely empty, ensure all filters are reset
+    if (!pSearch && !pStatus && !pOverdue) {
+      setBureau('ALL');
+      setRegion('ALL');
+      setCategory('ALL');
+      setPriority('ALL');
+      setDateFrom('');
+      setDateTo('');
+    }
+  }, [searchParams]);
+
+  // Compute Active Filter Count
+  const activeFilterCount = [
+    search.trim() !== '',
+    bureau.toUpperCase() !== 'ALL',
+    status.toUpperCase() !== 'ALL',
+    region.toUpperCase() !== 'ALL',
+    category.toUpperCase() !== 'ALL',
+    priority.toUpperCase() !== 'ALL',
+    dateFrom !== '',
+    dateTo !== '',
+    overdueOnly === true
+  ].filter(Boolean).length;
+
+  // Reset all filters to default
+  function resetFilters() {
+    setSearch('');
+    setBureau('ALL');
+    setStatus('ALL');
+    setRegion('ALL');
+    setCategory('ALL');
+    setPriority('ALL');
+    setDateFrom('');
+    setDateTo('');
+    setOverdueOnly(false);
+    setPagination(p => ({ ...p, page: 1 }));
+    navigate('/cases', { replace: true });
+  }
 
   // Register New Case Modal State
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -215,6 +275,24 @@ export default function AllCases({ triggerRefresh }) {
             <span className="text-3xs font-semibold uppercase">Filters:</span>
           </div>
 
+          {activeFilterCount > 0 && (
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-3xs font-bold bg-aicte-navy text-white">
+              <span>{activeFilterCount} active</span>
+            </span>
+          )}
+
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="px-2.5 py-1 text-2xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-smooth inline-flex items-center space-x-1 shadow-2xs"
+              title="Reset all filters to default"
+            >
+              <X className="w-3 h-3 text-rose-600" />
+              <span>Clear all filters</span>
+            </button>
+          )}
+
           {/* Bureau */}
           <select
             value={bureau}
@@ -319,6 +397,22 @@ export default function AllCases({ triggerRefresh }) {
           </button>
         </div>
       </div>
+
+      {/* Error Alert Banner if fetch fails */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span className="font-medium">{error}</span>
+          </div>
+          <button
+            onClick={loadCases}
+            className="px-3 py-1 bg-white border border-red-300 text-red-700 hover:bg-red-50 rounded-lg font-semibold text-xs transition-smooth shadow-2xs"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Cases Table Card */}
       <div className="bg-white border border-card-border rounded-card overflow-hidden shadow-card">
